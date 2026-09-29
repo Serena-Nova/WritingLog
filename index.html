@@ -139,6 +139,11 @@ textarea{width:100%;min-height:74px;resize:vertical;line-height:1.5}
 .swatch{width:30px;height:30px;border-radius:6px;border:2px solid transparent}
 .swatch.on{border-color:var(--ink);outline:2px solid var(--gold);outline-offset:1px}
 .bookhead .title::before{content:"";display:inline-block;width:10px;height:22px;border-radius:2px;margin-right:10px;vertical-align:-4px;background:var(--c)}
+/* versions */
+.vrow{display:flex;gap:12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.vrow b{font-family:var(--serif);margin-left:auto;font-variant-numeric:tabular-nums}
+.vline{margin:14px 0 0;padding:10px 14px;background:var(--gold-2);border-radius:10px;font:italic 400 .98rem/1.45 var(--serif)}
+.tokenlink{display:inline-block;margin:0 0 12px;font-weight:700;color:var(--accent)}
 /* celebration */
 #confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
 .cheer{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translate(-50%,-20px);opacity:0;z-index:61;pointer-events:none;
@@ -238,9 +243,12 @@ activeBooks:'Working titles',archivedBooks:'Archived',archive:'Archive',unarchiv
 fields:'Fields to show for this book',totalWritten:'Written in total',hours:'Writing hours',lastTotal:'Manuscript now',
 deleteBook:'Delete this book',confirmDelete:'Delete this book and its words from every day? This cannot be undone.',timeline:'Manuscript over time',
 worked:'Days worked',spineColor:'Spine colour',
-badToken:'GitHub sync: check your token',offline:'Offline, will sync later',ghTitle:'Sync between your devices',
+badToken:'GitHub sync: check your token',
+versions:'Finished versions',versionsHint:'(the final total of a phase, like your first draft)',
+vsVersion:(a,b,c,d,e,f)=>`${a}: ${b} words. ${c} now: ${d} words (${e}, ${f}%).`,
+tokenLink:'Open GitHub to make your token',offline:'Offline, will sync later',ghTitle:'Sync between your devices',
 ghIntro:'Your log is saved in this browser. To see the same log on your laptop, phone and iPad, connect it to a private GitHub gist. You do this once per device.',
-ghSteps:['On github.com, open Settings, then Developer settings, then Personal access tokens, then Tokens (classic).','Choose Generate new token (classic). Give it a name like Writing log, pick an expiration, and tick only "gist".','Copy the token and paste it below. Use the same token on each device.'],
+ghSteps:['Tap the link above. Sign in to GitHub in your browser if it asks (not in the GitHub app).','The name and the "gist" tick are already filled in. Pick an expiration, scroll down and tap Generate token.','Copy the token (it starts with ghp_) and paste it below. Use the same token on each device.'],
 ghConnect:'Connect',ghOn:'Syncing with your private GitHub gist.',ghWaiting:'Connecting to GitHub.',ghSyncNow:'Sync now',ghOff:'Disconnect this device',
 syncInfoGh:'Download a backup now and then. It is one file with everything in it.',title:'Working title',
 language:'Language',showFields:'What to ask each day',lists:'Your options',cycleSettings:'Cycle',cycleLength:'Average cycle length (days)',
@@ -279,9 +287,12 @@ activeBooks:'Werktitels',archivedBooks:'Gearchiveerd',archive:'Archiveren',unarc
 fields:'Velden voor dit boek',totalWritten:'Totaal geschreven',hours:'Schrijfuren',lastTotal:'Manuscript nu',
 deleteBook:'Dit boek verwijderen',confirmDelete:'Dit boek en de woorden ervan uit alle dagen verwijderen? Dit kan niet ongedaan worden.',timeline:'Manuscript door de tijd',
 worked:'Dagen gewerkt',spineColor:'Kleur van de rug',
-badToken:'GitHub-sync: controleer je token',offline:'Offline, synchroniseert later',ghTitle:'Synchroniseren tussen je apparaten',
+badToken:'GitHub-sync: controleer je token',
+versions:'Afgeronde versies',versionsHint:'(het eindtotaal van een fase, zoals je eerste versie)',
+vsVersion:(a,b,c,d,e,f)=>`${a}: ${b} woorden. ${c} nu: ${d} woorden (${e}, ${f}%).`,
+tokenLink:'Open GitHub om je token te maken',offline:'Offline, synchroniseert later',ghTitle:'Synchroniseren tussen je apparaten',
 ghIntro:'Je logboek wordt in deze browser opgeslagen. Om hetzelfde logboek op laptop, telefoon en iPad te zien, koppel je het aan een privé GitHub-gist. Dat doe je één keer per apparaat.',
-ghSteps:['Ga op github.com naar Settings, dan Developer settings, dan Personal access tokens, dan Tokens (classic).','Kies Generate new token (classic). Geef het een naam zoals Writing log, kies een verloopdatum en vink alleen "gist" aan.','Kopieer het token en plak het hieronder. Gebruik hetzelfde token op elk apparaat.'],
+ghSteps:['Tik op de link hierboven. Log in bij GitHub in je browser als daarom gevraagd wordt (niet in de GitHub-app).','De naam en het vinkje bij "gist" staan er al. Kies een verloopdatum, scroll naar beneden en tik op Generate token.','Kopieer het token (begint met ghp_) en plak het hieronder. Gebruik hetzelfde token op elk apparaat.'],
 ghConnect:'Koppelen',ghOn:'Synchroniseert met je privé GitHub-gist.',ghWaiting:'Verbinden met GitHub.',ghSyncNow:'Nu synchroniseren',ghOff:'Dit apparaat loskoppelen',
 syncInfoGh:'Download af en toe een back-up. Dat is één bestand met alles erin.',title:'Werktitel',
 language:'Taal',showFields:'Wat je elke dag wilt invullen',lists:'Jouw opties',cycleSettings:'Cyclus',cycleLength:'Gemiddelde cycluslengte (dagen)',
@@ -608,6 +619,7 @@ function rWords(day){
       ${f.outside!==false?`<label>${t('outside')}<input type="number" inputmode="numeric" min="0" data-pw="outside" data-pid="${cur}" value="${v('outside')}"><span class="hint">${t('outsideHint')}</span></label>`:''}
       ${f.rewritten!==false?`<label>${t('rewritten')}<input type="number" inputmode="numeric" min="0" data-pw="rewritten" data-pid="${cur}" value="${v('rewritten')}"><span class="hint">${t('rewrittenHint')}</span></label>`:''}
     </div>
+    ${(()=>{const now=pd.endTotal!=null?pd.endTotal:pd.startTotal!=null?pd.startTotal:bookStats(cur).last;const l=versionLine(p,now);return l?`<p class="vline">${esc(l)}</p>`:''})()}
     ${f.felt!==false?`<div class="field"><button class="chip ${p.felt?'on':''}" data-act="felt" data-id="${cur}" aria-pressed="${!!p.felt}">${t('felt')}</button></div>`:''}
   </section>`;
 }
@@ -743,16 +755,21 @@ function rInsights(){
 }
 
 /* ---------- books ---------- */
+function versionLine(p,now){
+  const vs=p.versions||[];if(!vs.length||now==null)return'';const v=vs[vs.length-1];const diff=now-v.total;const pc=v.total?Math.round(diff/v.total*1000)/10:0;
+  return T[L()].vsVersion(o(v.phase),num(v.total),o(p.phase),num(now),(diff>0?'+':'')+num(diff),(pc>0?'+':'')+String(pc).replace('.',L()==='nl'?',':'.'));
+}
 function bookStats(pid){
   let written=0,moved=0,outside=0,min=0,daysN=0,last=null;const pts=[];
   for(const d of allDays()){const s=dayStats(d,{pid,phase:'all'});if(s.wrote||d.proj[pid]){if(s.wrote)daysN++;written+=s.written;moved+=s.moved;outside+=s.outside;min+=s.minutes}
-    const pd=d.proj[pid];if(pd&&pd.endTotal!=null){last=pd.endTotal;pts.push({x:parseISO(d.date).getTime(),y:pd.endTotal,label:parseISO(d.date).toLocaleDateString(loc(),{day:'numeric',month:'short'})})}}
+    const pd=d.proj[pid];const tot=pd?(pd.endTotal!=null?pd.endTotal:pd.startTotal):null;if(tot!=null){last=tot;pts.push({x:parseISO(d.date).getTime(),y:tot,label:parseISO(d.date).toLocaleDateString(loc(),{day:'numeric',month:'short'})})}}
   return{written,moved,outside,min,daysN,last,pts};
 }
 function rBooks(){
   const act=activeProjects(),arc=S.settings.projects.filter(p=>p.archived);
   const row=p=>{const b=bookStats(p.id);const open=view.openBook===p.id;const f=p.fields||{};
     return`<div class="book"><button class="bookhead" data-act="open-book" data-id="${p.id}" aria-expanded="${open}"><span class="title" style="--c:${spineColor(p)}">${esc(p.title)}</span><span class="muted small">${esc(o(p.phase))}</span></button>
+      ${!open&&versionLine(p,b.last)?`<div class="small muted" style="margin-top:4px">${esc(versionLine(p,b.last))}</div>`:''}
       ${p.target?`<div class="progress"><i style="width:${Math.min(100,(b.last||0)/p.target*100)}%"></i></div><div class="small muted">${num(b.last||0)} / ${num(p.target)}</div>`:''}
       ${open?`<div class="bookbody">
         <dl class="stats"><div><dt>${t('lastTotal')}</dt><dd>${b.last==null?'–':num(b.last)}</dd></div><div><dt>${t('totalWritten')}</dt><dd>${num(b.written)}</dd></div><div><dt>${t('outside')}</dt><dd>${num(b.outside)}</dd></div><div><dt>${t('moved')}</dt><dd>${num(b.moved)}</dd></div><div><dt>${t('hours')}</dt><dd>${fmtMin(b.min)}</dd></div><div><dt>${t('worked')}</dt><dd>${b.daysN}</dd></div></dl>
@@ -761,6 +778,11 @@ function rBooks(){
           <label>${t('title')}<input type="text" data-bookf="title" data-id="${p.id}" value="${esc(p.title)}"></label>
           <label>${t('phase')}<select data-bookf="phase" data-id="${p.id}">${S.settings.lists.phase.map(x=>`<option value="${esc(x)}" ${x===p.phase?'selected':''}>${esc(o(x))}</option>`).join('')}</select></label>
           <label>${t('target')}<input type="number" inputmode="numeric" min="0" data-bookf="target" data-id="${p.id}" value="${p.target==null?'':p.target}"></label>
+        </div>
+        <div class="field"><span class="flabel">${t('versions')} <span class="muted">${t('versionsHint')}</span></span>
+          ${(p.versions||[]).map((v,i)=>`<div class="vrow"><span>${esc(o(v.phase))}</span><b>${num(v.total)}</b><button class="link" data-act="rm-version" data-id="${p.id}" data-i="${i}" aria-label="remove">×</button></div>`).join('')}
+          <div class="row" style="margin-top:8px"><select id="v-phase-${p.id}" aria-label="${t('phase')}">${S.settings.lists.phase.map(x=>`<option value="${esc(x)}" ${x==='first-draft'?'selected':''}>${esc(o(x))}</option>`).join('')}</select><input type="number" inputmode="numeric" min="0" id="v-total-${p.id}" placeholder="92390" aria-label="${t('words')}" style="width:130px"><button class="btn small" data-act="add-version" data-id="${p.id}">${t('add')}</button></div>
+          ${versionLine(p,b.last)?`<p class="vline">${esc(versionLine(p,b.last))}</p>`:''}
         </div>
         <div class="field"><span class="flabel">${t('spineColor')}</span><div class="swatches">${SPINES.map(c=>`<button class="swatch ${spineColor(p)===c?'on':''}" style="background:${c}" data-act="book-color" data-id="${p.id}" data-v="${c}" aria-label="${c}"></button>`).join('')}</div></div>
         <div class="field"><span class="flabel">${t('fields')}</span><div class="cols2">${['totals','moved','outside','rewritten','felt'].map(k=>`<label class="toggle"><input type="checkbox" data-bookfield="${k}" data-id="${p.id}" ${f[k]!==false?'checked':''}>${t('f_'+k)}</label>`).join('')}</div></div>
@@ -791,7 +813,7 @@ function rSettings(){
 function rGistPanel(){const c=gistCfg();
   return`<section class="panel"><h3>${t('ghTitle')}</h3>
   ${c.token?`<p class="small" style="margin-top:0">${syncState==='synced'?t('ghOn'):syncState==='badtoken'?t('badToken'):t('ghWaiting')}</p><div class="row"><button class="btn soft small" data-act="gist-sync">${t('ghSyncNow')}</button><button class="btn ghost small" data-act="gist-off">${t('ghOff')}</button></div>`
-  :`<p class="small muted" style="margin-top:0">${t('ghIntro')}</p><ol class="small" style="padding-left:20px;margin:8px 0 14px">${t('ghSteps').map(x=>`<li style="margin:3px 0">${esc(x)}</li>`).join('')}</ol>
+  :`<p class="small muted" style="margin-top:0">${t('ghIntro')}</p><a class="tokenlink" href="https://github.com/settings/tokens/new?scopes=gist&description=Writing%20log" target="_blank" rel="noopener">${t('tokenLink')}</a><ol class="small" style="padding-left:20px;margin:8px 0 14px">${t('ghSteps').map(x=>`<li style="margin:3px 0">${esc(x)}</li>`).join('')}</ol>
   <div class="row"><input type="password" id="ghToken" placeholder="ghp_..." autocomplete="off" aria-label="GitHub token" style="flex:1"><button class="btn small" data-act="gist-on">${t('ghConnect')}</button></div>`}
   </section>`}
 
@@ -947,6 +969,8 @@ const ACT={
   'save-option':()=>{const v=$('#m-opt').value.trim();if(v){const l=S.settings.lists[modalCtx.list];if(!l.includes(v))l.push(v);touch('settings')}closeModal();render()},
   'rm-option':b=>{S.settings.lists[b.dataset.list].splice(+b.dataset.i,1);touch('settings');render()},
   'open-book':b=>{view.openBook=view.openBook===b.dataset.id?null:b.dataset.id;render()},
+  'add-version':b=>{const id=b.dataset.id;const tot=$('#v-total-'+id).value;if(tot==='')return;const p=proj(id);p.versions=p.versions||[];p.versions.push({phase:$('#v-phase-'+id).value,total:Math.max(0,+tot)});touch('settings');render()},
+  'rm-version':b=>{const p=proj(b.dataset.id);p.versions.splice(+b.dataset.i,1);touch('settings');render()},
   'book-color':b=>{proj(b.dataset.id).color=b.dataset.v;touch('settings');render()},
   archive:b=>{const p=proj(b.dataset.id);p.archived=!p.archived;touch('settings');render()},
   'delete-book':b=>{if(!confirm(t('confirmDelete')))return;const id=b.dataset.id;S.settings.projects=S.settings.projects.filter(p=>p.id!==id);
