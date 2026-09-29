@@ -141,6 +141,7 @@ textarea{width:100%;min-height:74px;resize:vertical;line-height:1.5}
 .bookhead .title::before{content:"";display:inline-block;width:10px;height:22px;border-radius:2px;margin-right:10px;vertical-align:-4px;background:var(--c)}
 /* versions */
 .vrow{display:flex;gap:12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.small-chip{padding:3px 10px;font-size:.78rem}
 .vrow b{font-family:var(--serif);margin-left:auto;font-variant-numeric:tabular-nums}
 .vline{margin:14px 0 0;padding:10px 14px;background:var(--gold-2);border-radius:10px;font:italic 400 .98rem/1.45 var(--serif)}
 .tokenlink{display:inline-block;margin:0 0 12px;font-weight:700;color:var(--accent)}
@@ -217,6 +218,7 @@ textarea{width:100%;min-height:74px;resize:vertical;line-height:1.5}
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 <script>
 "use strict";
+const APP_VERSION='1.4';
 /* ---------- text ---------- */
 const T={en:{
 app:'Writing log',today:'Today',week:'Week',insights:'Insights',books:'Books',settings:'Settings',
@@ -244,9 +246,9 @@ fields:'Fields to show for this book',totalWritten:'Written in total',hours:'Wri
 deleteBook:'Delete this book',confirmDelete:'Delete this book and its words from every day? This cannot be undone.',timeline:'Manuscript over time',
 worked:'Days worked',spineColor:'Spine colour',
 badToken:'GitHub sync: check your token',
-versions:'Finished versions',versionsHint:'(the final total of a phase, like your first draft)',
+versions:'Finished versions',versionsHint:'(the final total of a phase. Your rewrite is compared with the first draft, unless you choose another one)',
 vsVersion:(a,b,c,d,e,f)=>`${a}: ${b} words. ${c} now: ${d} words (${e}, ${f}%).`,
-tokenLink:'Open GitHub to make your token',offline:'Offline, will sync later',ghTitle:'Sync between your devices',
+tokenLink:'Open GitHub to make your token',compareWith:'Compare with this',comparing:'Comparing with this',offline:'Offline, will sync later',ghTitle:'Sync between your devices',
 ghIntro:'Your log is saved in this browser. To see the same log on your laptop, phone and iPad, connect it to a private GitHub gist. You do this once per device.',
 ghSteps:['Tap the link above. Sign in to GitHub in your browser if it asks (not in the GitHub app).','The name and the "gist" tick are already filled in. Pick an expiration, scroll down and tap Generate token.','Copy the token (it starts with ghp_) and paste it below. Use the same token on each device.'],
 ghConnect:'Connect',ghOn:'Syncing with your private GitHub gist.',ghWaiting:'Connecting to GitHub.',ghSyncNow:'Sync now',ghOff:'Disconnect this device',
@@ -288,9 +290,9 @@ fields:'Velden voor dit boek',totalWritten:'Totaal geschreven',hours:'Schrijfure
 deleteBook:'Dit boek verwijderen',confirmDelete:'Dit boek en de woorden ervan uit alle dagen verwijderen? Dit kan niet ongedaan worden.',timeline:'Manuscript door de tijd',
 worked:'Dagen gewerkt',spineColor:'Kleur van de rug',
 badToken:'GitHub-sync: controleer je token',
-versions:'Afgeronde versies',versionsHint:'(het eindtotaal van een fase, zoals je eerste versie)',
+versions:'Afgeronde versies',versionsHint:'(het eindtotaal van een fase. Je herschrijving wordt vergeleken met de eerste versie, tenzij je een andere kiest)',
 vsVersion:(a,b,c,d,e,f)=>`${a}: ${b} woorden. ${c} nu: ${d} woorden (${e}, ${f}%).`,
-tokenLink:'Open GitHub om je token te maken',offline:'Offline, synchroniseert later',ghTitle:'Synchroniseren tussen je apparaten',
+tokenLink:'Open GitHub om je token te maken',compareWith:'Hiermee vergelijken',comparing:'Wordt mee vergeleken',offline:'Offline, synchroniseert later',ghTitle:'Synchroniseren tussen je apparaten',
 ghIntro:'Je logboek wordt in deze browser opgeslagen. Om hetzelfde logboek op laptop, telefoon en iPad te zien, koppel je het aan een privé GitHub-gist. Dat doe je één keer per apparaat.',
 ghSteps:['Tik op de link hierboven. Log in bij GitHub in je browser als daarom gevraagd wordt (niet in de GitHub-app).','De naam en het vinkje bij "gist" staan er al. Kies een verloopdatum, scroll naar beneden en tik op Generate token.','Kopieer het token (begint met ghp_) en plak het hieronder. Gebruik hetzelfde token op elk apparaat.'],
 ghConnect:'Koppelen',ghOn:'Synchroniseert met je privé GitHub-gist.',ghWaiting:'Verbinden met GitHub.',ghSyncNow:'Nu synchroniseren',ghOff:'Dit apparaat loskoppelen',
@@ -755,8 +757,9 @@ function rInsights(){
 }
 
 /* ---------- books ---------- */
+function baseVersion(p){const vs=p.versions||[];return vs.find(x=>x.base)||vs.find(x=>x.phase==='first-draft')||vs[vs.length-1]||null}
 function versionLine(p,now){
-  const vs=p.versions||[];if(!vs.length||now==null)return'';const v=vs[vs.length-1];const diff=now-v.total;const pc=v.total?Math.round(diff/v.total*1000)/10:0;
+  const vs=p.versions||[];if(!vs.length||now==null)return'';const v=baseVersion(p);const diff=now-v.total;const pc=v.total?Math.round(diff/v.total*1000)/10:0;
   return T[L()].vsVersion(o(v.phase),num(v.total),o(p.phase),num(now),(diff>0?'+':'')+num(diff),(pc>0?'+':'')+String(pc).replace('.',L()==='nl'?',':'.'));
 }
 function bookStats(pid){
@@ -780,7 +783,7 @@ function rBooks(){
           <label>${t('target')}<input type="number" inputmode="numeric" min="0" data-bookf="target" data-id="${p.id}" value="${p.target==null?'':p.target}"></label>
         </div>
         <div class="field"><span class="flabel">${t('versions')} <span class="muted">${t('versionsHint')}</span></span>
-          ${(p.versions||[]).map((v,i)=>`<div class="vrow"><span>${esc(o(v.phase))}</span><b>${num(v.total)}</b><button class="link" data-act="rm-version" data-id="${p.id}" data-i="${i}" aria-label="remove">×</button></div>`).join('')}
+          ${(p.versions||[]).map((v,i)=>`<div class="vrow"><span>${esc(o(v.phase))}</span><b>${num(v.total)}</b><button class="chip small-chip ${baseVersion(p)===v?'on':''}" data-act="base-version" data-id="${p.id}" data-i="${i}" aria-pressed="${baseVersion(p)===v}">${baseVersion(p)===v?t('comparing'):t('compareWith')}</button><button class="link" data-act="rm-version" data-id="${p.id}" data-i="${i}" aria-label="remove">×</button></div>`).join('')}
           <div class="row" style="margin-top:8px"><select id="v-phase-${p.id}" aria-label="${t('phase')}">${S.settings.lists.phase.map(x=>`<option value="${esc(x)}" ${x==='first-draft'?'selected':''}>${esc(o(x))}</option>`).join('')}</select><input type="number" inputmode="numeric" min="0" id="v-total-${p.id}" placeholder="92390" aria-label="${t('words')}" style="width:130px"><button class="btn small" data-act="add-version" data-id="${p.id}">${t('add')}</button></div>
           ${versionLine(p,b.last)?`<p class="vline">${esc(versionLine(p,b.last))}</p>`:''}
         </div>
@@ -807,7 +810,8 @@ function rSettings(){
     ${s.cycle.starts.length?`<div class="field"><span class="flabel">${t('periodStarts')}</span><div class="chips">${[...s.cycle.starts].sort().reverse().map(d=>`<button class="chip" data-act="rm-period" data-v="${d}">${esc(parseISO(d).toLocaleDateString(loc(),{day:'numeric',month:'short',year:'numeric'}))}<span class="x" aria-hidden="true">×</span></button>`).join('')}</div></div>`:''}</section>
   ${IN_CLAUDE?'':rGistPanel()}<section class="panel"><h3>${t('data')}</h3><p class="muted small" style="margin-top:0">${IN_CLAUDE?t('syncInfo'):t('syncInfoGh')}</p>
     <div class="row"><button class="btn soft small" data-act="export-json">${t('exportJson')}</button><button class="btn soft small" data-act="export-days">${t('exportDays')}</button><button class="btn soft small" data-act="export-sprints">${t('exportSprints')}</button><button class="btn ghost small" data-act="import">${t('importJson')}</button></div>
-    <p class="note" id="datamsg"></p></section>`;
+    <p class="note" id="datamsg"></p></section>
+  <p class="small muted" style="text-align:center;margin-top:24px">Writing log, version ${APP_VERSION}</p>`;
 }
 
 function rGistPanel(){const c=gistCfg();
@@ -970,6 +974,7 @@ const ACT={
   'rm-option':b=>{S.settings.lists[b.dataset.list].splice(+b.dataset.i,1);touch('settings');render()},
   'open-book':b=>{view.openBook=view.openBook===b.dataset.id?null:b.dataset.id;render()},
   'add-version':b=>{const id=b.dataset.id;const tot=$('#v-total-'+id).value;if(tot==='')return;const p=proj(id);p.versions=p.versions||[];p.versions.push({phase:$('#v-phase-'+id).value,total:Math.max(0,+tot)});touch('settings');render()},
+  'base-version':b=>{const p=proj(b.dataset.id);const i=+b.dataset.i;const was=!!p.versions[i].base;p.versions.forEach(v=>delete v.base);if(!was)p.versions[i].base=true;touch('settings');render()},
   'rm-version':b=>{const p=proj(b.dataset.id);p.versions.splice(+b.dataset.i,1);touch('settings');render()},
   'book-color':b=>{proj(b.dataset.id).color=b.dataset.v;touch('settings');render()},
   archive:b=>{const p=proj(b.dataset.id);p.archived=!p.archived;touch('settings');render()},
